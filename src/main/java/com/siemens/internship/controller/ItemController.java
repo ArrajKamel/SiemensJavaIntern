@@ -1,5 +1,7 @@
 package com.siemens.internship.controller;
 
+import com.siemens.internship.dto.ItemDto;
+import com.siemens.internship.mapper.ItemMapper;
 import com.siemens.internship.service.ItemService;
 import com.siemens.internship.model.Item;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/items")
@@ -19,18 +22,34 @@ public class ItemController {
     @Autowired
     private ItemService itemService;
 
+    /**
+     * Retrieves all items and returns them as DTOs.
+     *
+     * @return ResponseEntity with list of ItemDTOs and HTTP status
+     */
     @GetMapping
-    public ResponseEntity<List<Item>> getAllItems() {
-        return new ResponseEntity<>(itemService.findAll(), HttpStatus.OK);
+    public ResponseEntity<List<ItemDto>> getAllItems() {
+        List<ItemDto> itemDTOs = itemService.findAll()
+                .stream()
+                .map(ItemMapper::toDto)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(itemDTOs, HttpStatus.OK);
     }
 
     @PostMapping
-    public ResponseEntity<Item> createItem(@Valid @RequestBody Item item, BindingResult result) {
+    public ResponseEntity<?> createItem(@Valid @RequestBody ItemDto itemDTO, BindingResult result) {
         if (result.hasErrors()) {
-            return new ResponseEntity<>(null, HttpStatus.CREATED);
+            List<String> errors = result.getFieldErrors().stream()
+                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                    .toList();
+            return ResponseEntity.badRequest().body(errors);
         }
-        return new ResponseEntity<>(itemService.save(item), HttpStatus.BAD_REQUEST);
+
+        ItemDto created = itemService.createItem(itemDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Item> getItemById(@PathVariable Long id) {

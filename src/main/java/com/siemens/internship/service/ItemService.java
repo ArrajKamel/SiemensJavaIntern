@@ -1,5 +1,7 @@
 package com.siemens.internship.service;
 
+import com.siemens.internship.dto.ItemDto;
+import com.siemens.internship.mapper.ItemMapper;
 import com.siemens.internship.model.Item;
 import com.siemens.internship.repository.ItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +21,29 @@ public class ItemService {
     private List<Item> processedItems = new ArrayList<>();
     private int processedCount = 0;
 
-
+    /**
+     * Retrieves all items from the database.
+     *
+     * This method abstracts the database interaction and returns raw entity objects.
+     * Conversion to DTOs should be handled at the controller layer.
+     *
+     * @return List of all Item entities
+     */
     public List<Item> findAll() {
         return itemRepository.findAll();
+    }
+
+    /**
+     * Creates a new item in the system.
+     * Handles DTO to entity conversion and persistence.
+     *
+     * @param dto DTO representing the item to create
+     * @return DTO of the saved item
+     */
+    public ItemDto createItem(ItemDto dto) {
+        Item entity = ItemMapper.toEntity(dto);
+        Item saved = itemRepository.save(entity);
+        return ItemMapper.toDto(saved);
     }
 
     public Optional<Item> findById(Long id) {
