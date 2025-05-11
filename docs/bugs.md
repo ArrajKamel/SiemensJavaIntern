@@ -58,8 +58,6 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 - **Exception Handling**: Consider adding a global exception handler to handle validation errors more effectively.
 - **Pagination**: Implement pagination to improve API performance when retrieving large numbers of items in the future.
 
-
-
 # Refactoring - Get Item by ID Method
 
 ## Summary of Changes
@@ -81,4 +79,28 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 
 ---
 
-## Commit Message:
+
+# Refactoring - Delete Item by ID Method
+
+## Summary of Changes
+
+### 1. Controller Changes:
+
+- **Correct HTTP Status**:
+
+  - The controller was updated to return a `204 NO_CONTENT` status on successful item deletion, as this is the appropriate status for successful deletion without a response body.
+  - If the item is not found, the controller now returns a `404 NOT_FOUND` status, indicating the item doesn't exist in the database.
+- **Improved Error Handling**:
+
+  - The controller now ensures proper error handling by checking if the item exists before calling the delete operation.
+
+### 2. Service Changes:
+
+- **Existence Check**:
+  - The service was updated to ensure the item exists before attempting deletion. If it doesn't exist, a custom `ResourceNotFoundException` is thrown, which can be caught and handled globally.
+
+## Future Improvements:
+
+- **Global Error Handling**: Consider adding a global exception handler to manage errors such as `ResourceNotFoundException` uniformly across the application.
+
+---

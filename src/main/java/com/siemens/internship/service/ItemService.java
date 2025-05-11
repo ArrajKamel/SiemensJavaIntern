@@ -68,9 +68,16 @@ public class ItemService {
         return itemRepository.save(item);
     }
 
-    public void deleteById(Long id) {
-        itemRepository.deleteById(id);
+    public void deleteById(Long id) throws Exception {
+        Optional<Item> item = itemRepository.findById(id);
+        if (item.isPresent()) {
+            itemRepository.deleteById(id);
+        } else {
+            // TODO replace with custom exception "ResourceNotFoundException"
+            throw new Exception("Item not found with id: " + id); // Throwing a custom exception if item doesn't exist
+        }
     }
+
 
 
     /**

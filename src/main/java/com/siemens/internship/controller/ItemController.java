@@ -72,9 +72,13 @@ public class ItemController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
-        itemService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.CONFLICT);
+    public ResponseEntity<Void> deleteItem(@PathVariable Long id) throws Exception {
+        Optional<Item> item = itemService.findById(id);
+        if (item.isPresent()) {
+            itemService.deleteById(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);  // 204 No Content for successful deletion
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);  // 404 Not Found if item doesn't exist
     }
 
     @GetMapping("/process")
