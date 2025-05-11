@@ -29,6 +29,8 @@ public class ItemController {
      */
     @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItems() {
+        // TODO in the future please add pagination to avoid loading entire database
+
         List<ItemDto> itemDTOs = itemService.findAll()
                 .stream()
                 .map(ItemMapper::toDto)
@@ -61,24 +63,32 @@ public class ItemController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Item> updateItem(@PathVariable Long id, @RequestBody Item item) {
-        Optional<Item> existingItem = itemService.findById(id);
-        if (existingItem.isPresent()) {
-            item.setId(id);
-            return new ResponseEntity<>(itemService.save(item), HttpStatus.CREATED);
+    public ResponseEntity<?> updateItem(@PathVariable Long id, @Valid @RequestBody ItemDto itemDTO, BindingResult result) {
+        if (result.hasErrors()) {
+            List<String> errors = result.getFieldErrors().stream()
+                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                    .toList();
+            return ResponseEntity.badRequest().body(errors);  // Return a bad request response with error messages if validation fails
+        }
+
+        // Update item and return the updated DTO
+        ItemDto updatedItem = itemService.updateItem(id, itemDTO);
+        if (updatedItem != null) {
+            return ResponseEntity.ok(updatedItem);  // Return the updated item with a 200 OK status
         } else {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);  // Return 404 if item is not found
         }
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long id) throws Exception {
         Optional<Item> item = itemService.findById(id);
         if (item.isPresent()) {
             itemService.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);  // 204 No Content for successful deletion
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);  // 404 Not Found if item doesn't exist
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/process")

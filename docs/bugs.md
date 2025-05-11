@@ -104,3 +104,31 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 - **Global Error Handling**: Consider adding a global exception handler to manage errors such as `ResourceNotFoundException` uniformly across the application.
 
 ---
+
+
+# Refactoring - Update Item by ID Method
+
+## Summary of Changes
+
+### 1. Controller Changes:
+
+- **Validation**:
+
+  - The controller now validates the incoming `ItemDto`.
+  - If the validation fails, the controller returns a `400 BAD_REQUEST` with specific validation error messages.
+- **Status Codes**:
+
+  - If the update is successful, the controller returns `200 OK` with the updated item.
+  - If the item doesn't exist, the controller returns `404 NOT_FOUND`.
+
+### 2. Service Changes:
+
+- **Item Existence Check**:
+
+  - The service now checks if the item exists in the database before attempting to update it. If the item is not found, the method returns `null` to indicate that the update operation could not be completed.
+
+## Future Improvements:
+
+- **Global Error Handling**: Consider adding global exception handling to manage cases like `ResourceNotFoundException` more efficiently across the entire application.
+
+---

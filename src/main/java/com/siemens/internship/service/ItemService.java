@@ -30,6 +30,7 @@ public class ItemService {
      * @return List of all Item entities
      */
     public List<Item> findAll() {
+
         return itemRepository.findAll();
     }
 
@@ -69,6 +70,7 @@ public class ItemService {
     }
 
     public void deleteById(Long id) throws Exception {
+        // TODO for future verify permissions if the current user is allowed to delete this item.
         Optional<Item> item = itemRepository.findById(id);
         if (item.isPresent()) {
             itemRepository.deleteById(id);
@@ -77,6 +79,39 @@ public class ItemService {
             throw new Exception("Item not found with id: " + id); // Throwing a custom exception if item doesn't exist
         }
     }
+
+    /**
+     * Updates an existing item identified by the given ID.
+     * <p>
+     * This method checks if the item exists in the database. If found, it updates the item's details
+     * (name, description, status, and email) and saves the updated item. If the item is not found,
+     * it returns {@code null}.
+     * </p>
+     *
+     * @param id The ID of the item to be updated.
+     * @param itemDTO The DTO containing the updated information for the item.
+     * @return The updated {@link ItemDto} if the item is found and successfully updated,
+     *         {@code null} if the item does not exist.
+     */
+    public ItemDto updateItem(Long id, ItemDto itemDTO) {
+        // TODO for future verify permissions if the current user is allowed to update this item.
+
+        Optional<Item> itemOptional = itemRepository.findById(id);
+
+        if (itemOptional.isEmpty()) {
+            return null;
+        }
+
+        Item item = itemOptional.get();
+        item.setName(itemDTO.getName());
+        item.setDescription(itemDTO.getDescription());
+        item.setStatus(itemDTO.getStatus());
+        item.setEmail(itemDTO.getEmail());
+
+        item = itemRepository.save(item);
+        return ItemMapper.toDto(item);
+    }
+
 
 
 
