@@ -17,7 +17,6 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 - Protects internal representation of entities.
 - Makes API responses more predictable and maintainable.
 
-
 # Refactoring - Create Item Method
 
 ## Summary of Changes
@@ -59,4 +58,27 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 - **Exception Handling**: Consider adding a global exception handler to handle validation errors more effectively.
 - **Pagination**: Implement pagination to improve API performance when retrieving large numbers of items in the future.
 
+
+
+# Refactoring - Get Item by ID Method
+
+## Summary of Changes
+
+### 1. Controller Changes:
+
+- **Improved Error Handling**:
+
+  - The controller method for retrieving an item by ID was updated to return a `404 NOT_FOUND` status code when the item is not found in the database.
+  - Previously, it returned a `204 NO_CONTENT` status, which was not semantically correct when the item was missing.
+- **Better Response Handling**:
+
+  - The `Optional<Item>` is now used to check if the item exists before attempting to return it. If the item is present, it returns a `200 OK` status along with the item.
+  - If the item is not found, a `404 NOT_FOUND` response is returned to indicate that the requested resource could not be found.
+
+## Future Improvements:
+
+- **Error Handling**: Consider adding a global exception handler for improved consistency and error management across the application.
+
 ---
+
+## Commit Message:

@@ -46,6 +46,20 @@ public class ItemService {
         return ItemMapper.toDto(saved);
     }
 
+
+    /**
+     * Retrieves an item by its ID and returns it as a DTO.
+     * If the item is not found, it returns null.
+     *
+     * @param id The ID of the item to retrieve.
+     * @return An ItemDto if the item exists, otherwise null.
+     */
+    public ItemDto getItemById(Long id) {
+        Optional<Item> item = itemRepository.findById(id);
+        return item.map(ItemMapper::toDto).orElse(null);
+    }
+
+
     public Optional<Item> findById(Long id) {
         return itemRepository.findById(id);
     }

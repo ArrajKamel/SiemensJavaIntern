@@ -52,10 +52,12 @@ public class ItemController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Item> getItemById(@PathVariable Long id) {
-        return itemService.findById(id)
-                .map(item -> new ResponseEntity<>(item, HttpStatus.OK))
-                .orElse(new ResponseEntity<>(HttpStatus.NO_CONTENT));
+    public ResponseEntity<ItemDto> getItemById(@PathVariable Long id) {
+        ItemDto itemDto = itemService.getItemById(id);
+        if (itemDto == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 404 if item is not found
+        }
+        return ResponseEntity.ok(itemDto);
     }
 
     @PutMapping("/{id}")
