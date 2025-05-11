@@ -79,7 +79,6 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 
 ---
 
-
 # Refactoring - Delete Item by ID Method
 
 ## Summary of Changes
@@ -105,7 +104,6 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 
 ---
 
-
 # Refactoring - Update Item by ID Method
 
 ## Summary of Changes
@@ -130,5 +128,52 @@ Improve API design and data encapsulation by returning DTOs instead of raw JPA e
 ## Future Improvements:
 
 - **Global Error Handling**: Consider adding global exception handling to manage cases like `ResourceNotFoundException` more efficiently across the entire application.
+
+  ---
+
+# Refactoring: `processItemsAsync` Method
+
+What the Method Does
+
+The `processItemsAsync` method is responsible for:
+
+1. Asynchronously retrieving all items from the database
+2. Updating each item's status to `"PROCESSED"`
+3. Saving the updated item
+4. Returning a list of successfully processed items **only after all processing is completed**
+
+---
+
+## Changes Made
+
+### 1. Made the method return `CompletableFuture<List<Item>>`
+
+* So it completes only when **all** items are processed.
+
+### 2. Used Spring's `@Async` annotation
+
+* To run the method asynchronously using Spring's default executor.
+
+### 3. Removed the `processedCount` variable
+
+* It was not used and introduced thread safety risks.
+* I guess you added it to test understanding of concurrency.
+
+### 4. Used `CompletableFuture.supplyAsync()` for parallel processing
+
+* Allowed parallel processing of each item with proper error handling.
+
+### 5. Handled exceptions inside async tasks
+
+* Caught and logged exceptions properly
+* Reset interrupt flag on `InterruptedException`
+
+### 6. Filtered and returned only successfully processed items
+
+* Any failures or null results are excluded from the final list
+
+### 7. Left a `TODO` for a custom thread pool
+
+* Shows readiness to scale the async system with more control
 
 ---

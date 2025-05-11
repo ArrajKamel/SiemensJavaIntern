@@ -19,13 +19,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/items")
 public class ItemController {
 
+    private final ItemService itemService;
+
     @Autowired
-    private ItemService itemService;
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
 
     /**
      * Retrieves all items and returns them as DTOs.
      *
-     * @return ResponseEntity with list of ItemDTOs and HTTP status
+     * @return ResponseEntity with a list of ItemDTOs and HTTP status
      */
     @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItems() {
@@ -57,7 +61,7 @@ public class ItemController {
     public ResponseEntity<ItemDto> getItemById(@PathVariable Long id) {
         ItemDto itemDto = itemService.getItemById(id);
         if (itemDto == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();  // 404 if item is not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         return ResponseEntity.ok(itemDto);
     }
@@ -68,15 +72,14 @@ public class ItemController {
             List<String> errors = result.getFieldErrors().stream()
                     .map(error -> error.getField() + ": " + error.getDefaultMessage())
                     .toList();
-            return ResponseEntity.badRequest().body(errors);  // Return a bad request response with error messages if validation fails
+            return ResponseEntity.badRequest().body(errors);
         }
 
-        // Update item and return the updated DTO
         ItemDto updatedItem = itemService.updateItem(id, itemDTO);
         if (updatedItem != null) {
-            return ResponseEntity.ok(updatedItem);  // Return the updated item with a 200 OK status
+            return ResponseEntity.ok(updatedItem);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);  // Return 404 if item is not found
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -93,6 +96,18 @@ public class ItemController {
 
     @GetMapping("/process")
     public ResponseEntity<List<Item>> processItems() {
-        return new ResponseEntity<>(itemService.processItemsAsync(), HttpStatus.OK);
+        try{
+            List<Item> processedItems = itemService.processItemsAsync().get(); // blocking call
+            return new ResponseEntity<>(processedItems, HttpStatus.OK);
+
+        }catch (InterruptedException e){
+            Thread.currentThread().interrupt();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        }catch (Exception e){
+            // TODO // Log actual cause if needed
+            System.err.println("Processing failed: " + e.getCause());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

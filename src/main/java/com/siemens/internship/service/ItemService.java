@@ -8,22 +8,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemService {
+
+    private final ItemRepository itemRepository;
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+
     @Autowired
-    private ItemRepository itemRepository;
-    private static ExecutorService executor = Executors.newFixedThreadPool(10);
-    private List<Item> processedItems = new ArrayList<>();
-    private int processedCount = 0;
+    public ItemService(ItemRepository itemRepository) {
+        this.itemRepository = itemRepository;
+    }
+
 
     /**
      * Retrieves all items from the database.
-     *
      * This method abstracts the database interaction and returns raw entity objects.
      * Conversion to DTOs should be handled at the controller layer.
      *
@@ -65,9 +69,7 @@ public class ItemService {
         return itemRepository.findById(id);
     }
 
-    public Item save(Item item) {
-        return itemRepository.save(item);
-    }
+
 
     public void deleteById(Long id) throws Exception {
         // TODO for future verify permissions if the current user is allowed to delete this item.
@@ -76,7 +78,7 @@ public class ItemService {
             itemRepository.deleteById(id);
         } else {
             // TODO replace with custom exception "ResourceNotFoundException"
-            throw new Exception("Item not found with id: " + id); // Throwing a custom exception if item doesn't exist
+            throw new Exception("Item not found with id: " + id);
         }
     }
 
@@ -113,55 +115,54 @@ public class ItemService {
     }
 
 
-
-
     /**
-     * Your Tasks
-     * Identify all concurrency and asynchronous programming issues in the code
-     * Fix the implementation to ensure:
-     * All items are properly processed before the CompletableFuture completes
-     * Thread safety for all shared state
-     * Proper error handling and propagation
-     * Efficient use of system resources
-     * Correct use of Spring's @Async annotation
-     * Add appropriate comments explaining your changes and why they fix the issues
-     * Write a brief explanation of what was wrong with the original implementation
+     * Processes all items asynchronously by updating their status to "PROCESSED".
+     * <p>
+     * This method runs in the background using Spring's default async executor.
+     * It retrieves all item IDs, processes each in parallel using CompletableFutures,
+     * and returns a CompletableFuture that completes only after all items are processed.
+     * <p>
+     * Note: A custom Executor can be injected later for better control over thread management.
      *
-     * Hints
-     * Consider how CompletableFuture composition can help coordinate multiple async operations
-     * Think about appropriate thread-safe collections
-     * Examine how errors are handled and propagated
-     * Consider the interaction between Spring's @Async and CompletableFuture
+     * @return a CompletableFuture that eventually contains the list of successfully processed items
      */
     @Async
-    public List<Item> processItemsAsync() {
+    public CompletableFuture<List<Item>> processItemsAsync() {
 
         List<Long> itemIds = itemRepository.findAllIds();
 
-        for (Long id : itemIds) {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Thread.sleep(100);
+        List<CompletableFuture<Item>> futures = itemIds.stream()
+                .map(id -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        Thread.sleep(100);
 
-                    Item item = itemRepository.findById(id).orElse(null);
-                    if (item == null) {
-                        return;
+                        Optional<Item> optionalItem = itemRepository.findById(id);
+                        if (optionalItem.isEmpty()) return null;
+
+                        Item item = optionalItem.get();
+                        item.setStatus("PROCESSED");
+                        return itemRepository.save(item);
+
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return null;
+                    } catch (Exception e) {
+                        System.err.println("Error processing item " + id + ": " + e.getMessage());
+                        return null;
                     }
+                } , executor/* TODO: Use custom executor for better control in production */))
+                .toList();
 
-                    processedCount++;
+        CompletableFuture<Void> allDone = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture[0])
+        );
 
-                    item.setStatus("PROCESSED");
-                    itemRepository.save(item);
-                    processedItems.add(item);
-
-                } catch (InterruptedException e) {
-                    System.out.println("Error: " + e.getMessage());
-                }
-            }, executor);
-        }
-
-        return processedItems;
+        return allDone.thenApply(v ->
+                futures.stream()
+                        .map(CompletableFuture::join)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())
+        );
     }
-
 }
 
